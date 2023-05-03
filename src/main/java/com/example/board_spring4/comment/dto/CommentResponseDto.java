@@ -1,7 +1,6 @@
 package com.example.board_spring4.comment.dto;
 
 import com.example.board_spring4.comment.entity.Comment;
-import com.example.board_spring4.global.dto.InterfaceDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -9,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
-public class CommentResponseDto implements InterfaceDto {
+public class CommentResponseDto {
 
     private Long id;
     private String username;

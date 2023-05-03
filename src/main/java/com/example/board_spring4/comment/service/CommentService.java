@@ -6,7 +6,6 @@ import com.example.board_spring4.comment.dto.CommentRequestDto;
 import com.example.board_spring4.comment.dto.CommentResponseDto;
 import com.example.board_spring4.comment.entity.Comment;
 import com.example.board_spring4.comment.repository.CommentRepository;
-import com.example.board_spring4.global.dto.InterfaceDto;
 import com.example.board_spring4.global.dto.StatusResponseDto;
 import com.example.board_spring4.global.exception.ErrorException;
 import com.example.board_spring4.global.exception.ErrorResponseDto;
@@ -19,6 +18,7 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,66 +32,102 @@ public class CommentService {
     private final JwtUtil jwtUtil;
 
     @Transactional
-    public InterfaceDto createComment(CommentRequestDto commentRequestDto, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<?> createComment(CommentRequestDto commentRequestDto, HttpServletRequest httpServletRequest) {
+        try {
+            String token = jwtUtil.resolveToken(httpServletRequest);
 
-        String token = jwtUtil.resolveToken(httpServletRequest);
+            Board board = boardRepository.findById(commentRequestDto.getBoard_id()).orElseThrow(
+                    () -> new ErrorException(ExceptionEnum.BOARD_NOT_FOUND)
+            );
 
-        Board board = boardRepository.findById(commentRequestDto.getBoard_id()).orElseThrow(
-                () -> new ErrorException(ExceptionEnum.BOARD_NOT_FOUND)
-        );
+            Users users = getUserByToken(token);
 
-        Users users = getUserByToken(token);
+            if (users != null) {
+                Comment comment = new Comment(commentRequestDto);
 
-        if (users != null) {
-            Comment comment = new Comment(commentRequestDto);
+                comment.setBoard(board);
+                comment.setUsers(users);
 
-            comment.setBoard(board);
-            comment.setUsers(users);
+                commentRepository.save(comment);
 
-            commentRepository.save(comment);
-
-            return new CommentResponseDto(comment);
-        } else {
-            return new ErrorResponseDto(ExceptionEnum.TOKEN_NOT_FOUND);
+                CommentResponseDto commentResponseDto = new CommentResponseDto(comment);
+                return ResponseEntity.ok(commentResponseDto);
+            } else {
+                throw new ErrorException(ExceptionEnum.TOKEN_NOT_FOUND);
+            }
+        } catch (ErrorException e) {
+            ErrorResponseDto errorResponseDto = new ErrorResponseDto(e.getExceptionEnum().getMessage(), e.getExceptionEnum().getStatus());
+            return ResponseEntity.status(errorResponseDto.getStatus()).body(errorResponseDto);
         }
     }
+
+
+
+
 
     @Transactional
-    public InterfaceDto updateComment(Long id, CommentRequestDto commentRequestDto, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<?> updateComment(Long id, CommentRequestDto commentRequestDto, HttpServletRequest httpServletRequest) {
+        try {
+            String token = jwtUtil.resolveToken(httpServletRequest);
 
-        String token = jwtUtil.resolveToken(httpServletRequest);
+            Board board = boardRepository.findById(commentRequestDto.getBoard_id()).orElse(null);
+            if (board == null) {
+                throw new ErrorException(ExceptionEnum.BOARD_NOT_FOUND);
+            }
 
-        Users users = getUserByToken(token);
+            Users users = getUserByToken(token);
 
-        Comment comment = commentRepository.findById(id).orElseThrow(
-                () -> new ErrorException(ExceptionEnum.COMMENT_NOT_FOUND)
-        );
+            if (users != null) {
+                Comment comment = commentRepository.findById(id).orElseThrow(() -> new ErrorException(ExceptionEnum.COMMENT_NOT_FOUND));
 
-        if (comment.getUsers().getUsername().equals(users.getUsername()) || users.getRole() == UserRoleEnum.ADMIN) {
-            comment.updateComment(commentRequestDto);
+                if (!comment.getUsers().getUsername().equals(users.getUsername()) && users.getRole() != UserRoleEnum.ADMIN) {
+                    throw new ErrorException(ExceptionEnum.NOT_ALLOWED_AUTHORIZATIONS);
+                }
 
-            return new CommentResponseDto(comment);
-        } else {
-            return new ErrorResponseDto(ExceptionEnum.NOT_ALLOWED_AUTHORIZATIONS);
+                if (!comment.getBoard().getId().equals(board.getId())) {
+                    throw new ErrorException(ExceptionEnum.BOARD_NOT_FOUND);
+                }
+
+                comment.setComment(commentRequestDto.getComment());
+                commentRepository.save(comment);
+
+                CommentResponseDto commentResponseDto = new CommentResponseDto(comment);
+                return ResponseEntity.ok(commentResponseDto);
+            } else {
+                throw new ErrorException(ExceptionEnum.TOKEN_NOT_FOUND);
+            }
+        } catch (ErrorException e) {
+            ErrorResponseDto errorResponseDto = new ErrorResponseDto(e.getExceptionEnum().getMessage(), e.getExceptionEnum().getStatus());
+            return ResponseEntity.status(errorResponseDto.getStatus()).body(errorResponseDto);
         }
     }
+
+
 
     @Transactional
-    public InterfaceDto deleteComment(Long id, HttpServletRequest httpServletRequest) {
-        String token = jwtUtil.resolveToken(httpServletRequest);
-        Users users = getUserByToken(token);
+    public ResponseEntity<?> deleteComment(Long id, HttpServletRequest httpServletRequest) {
+        try {
+            String token = jwtUtil.resolveToken(httpServletRequest);
+            Users users = getUserByToken(token);
 
-        Comment comment = commentRepository.findById(id).orElseThrow(
-                () -> new ErrorException(ExceptionEnum.COMMENT_NOT_FOUND)
-        );
-        if (comment.getUsers().getUsername().equals(users.getUsername()) || users.getRole() == UserRoleEnum.ADMIN) {
-            commentRepository.delete(comment);
+            Comment comment = commentRepository.findById(id).orElseThrow(
+                    () -> new ErrorException(ExceptionEnum.COMMENT_NOT_FOUND)
+            );
 
-            return new StatusResponseDto("해당 댓글을 삭제하였습니다.", HttpStatus.OK.value());
-        } else {
-            return new ErrorResponseDto(ExceptionEnum.NOT_ALLOWED_AUTHORIZATIONS);
+            if (comment.getUsers().getUsername().equals(users.getUsername()) || users.getRole() == UserRoleEnum.ADMIN) {
+                commentRepository.delete(comment);
+
+                StatusResponseDto statusResponseDto = new StatusResponseDto("해당 댓글을 삭제하였습니다.", HttpStatus.OK.value());
+                return ResponseEntity.ok(statusResponseDto);
+            } else {
+                throw new ErrorException(ExceptionEnum.NOT_ALLOWED_AUTHORIZATIONS);
+            }
+        } catch (ErrorException e) {
+            ErrorResponseDto errorResponseDto = new ErrorResponseDto(e.getExceptionEnum().getMessage(), e.getExceptionEnum().getStatus());
+            return ResponseEntity.status(e.getExceptionEnum().getStatus()).body(errorResponseDto);
         }
     }
+
 
     private Users getUserByToken(String token) {
         Claims claims;

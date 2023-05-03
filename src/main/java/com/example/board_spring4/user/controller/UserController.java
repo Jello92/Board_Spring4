@@ -1,10 +1,10 @@
 package com.example.board_spring4.user.controller;
 
-import com.example.board_spring4.global.dto.InterfaceDto;
 import com.example.board_spring4.user.dto.UserRequestDto;
 import com.example.board_spring4.user.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,12 +16,12 @@ public class UserController {
 
     @ResponseBody
     @PostMapping("/signup")
-    public InterfaceDto signup(@RequestBody UserRequestDto userRequestDto){
+    public ResponseEntity<?> signup(@RequestBody UserRequestDto userRequestDto){
         return userService.signUp(userRequestDto);
     }
     @ResponseBody
     @PostMapping("/login")
-    public InterfaceDto login (@RequestBody UserRequestDto userRequestDto, HttpServletResponse httpServletResponse){
+    public ResponseEntity<?> login (@RequestBody UserRequestDto userRequestDto, HttpServletResponse httpServletResponse){
         return userService.login(userRequestDto, httpServletResponse);
     }
 }

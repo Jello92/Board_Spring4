@@ -6,7 +6,6 @@ import com.example.board_spring4.board.entity.Board;
 import com.example.board_spring4.board.repository.BoardRepository;
 import com.example.board_spring4.comment.dto.CommentResponseDto;
 import com.example.board_spring4.comment.entity.Comment;
-import com.example.board_spring4.global.dto.InterfaceDto;
 import com.example.board_spring4.global.dto.StatusResponseDto;
 import com.example.board_spring4.global.exception.ErrorException;
 import com.example.board_spring4.global.exception.ErrorResponseDto;
@@ -19,6 +18,7 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,39 +35,44 @@ public class BoardService {
     private final JwtUtil jwtUtil;
 
     @Transactional
-    public InterfaceDto createBoard(BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<?> createBoard(BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest) {
         try {
             String token = jwtUtil.resolveToken(httpServletRequest);
             Users users = getUserByToken(token);
             if (users != null) {
                 Board board = new Board(boardRequestDto, users);
                 boardRepository.save(board);
-                return new BoardResponseDto(board);
+                BoardResponseDto boardResponseDto = new BoardResponseDto(board);
+                return ResponseEntity.ok(boardResponseDto);
             } else {
-                return new ErrorResponseDto(ExceptionEnum.TOKEN_NOT_FOUND);
+                ErrorResponseDto errorResponseDto = new ErrorResponseDto(ExceptionEnum.TOKEN_NOT_FOUND);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponseDto);
             }
         } catch (ErrorException e) {
-            return new ErrorResponseDto(e.getExceptionEnum().getMessage(), e.getExceptionEnum().getStatus());
+            ErrorResponseDto errorResponseDto = new ErrorResponseDto(e.getExceptionEnum().getMessage(), e.getExceptionEnum().getStatus());
+            return ResponseEntity.status(errorResponseDto.getStatus()).body(errorResponseDto);
         }
     }
 
-    public InterfaceDto getBoard(Long id) { // 특정 게시글을 id로 가져오기 - id와 매칭하는 BoardResponseDto에 있는 게시글을 가져옴
+    public ResponseEntity<?> getBoard(Long id) {
         try {
-            Board board = boardRepository.findById(id).orElseThrow( // boardRepository findById를 사용하여 DB Board에서 검색
-                    () -> new ErrorException(ExceptionEnum.BOARD_NOT_FOUND) // 못 찾을 경우 메세지 output
+            Board board = boardRepository.findById(id).orElseThrow(
+                    () -> new ErrorException(ExceptionEnum.BOARD_NOT_FOUND)
             );
 
-            // 보드 확인 후 댓글 연결
             List<CommentResponseDto> comments = new ArrayList<>();
             for (Comment comment : board.getComment()) {
                 comments.add(new CommentResponseDto(comment));
             }
 
-            return new BoardResponseDto(board, comments);
+            BoardResponseDto boardResponseDto = new BoardResponseDto(board, comments);
+            return ResponseEntity.ok(boardResponseDto);
         } catch (ErrorException e) {
-            return new ErrorResponseDto(e.getExceptionEnum().getMessage(),e.getExceptionEnum().getStatus());
+            ErrorResponseDto errorResponseDto = new ErrorResponseDto(e.getExceptionEnum().getMessage(), e.getExceptionEnum().getStatus());
+            return ResponseEntity.status(errorResponseDto.getStatus()).body(errorResponseDto);
         }
     }
+
 
     @Transactional(readOnly = true)
     public List<BoardResponseDto> getBoardList() {
@@ -85,65 +90,48 @@ public class BoardService {
         return boards;
     }
     @Transactional
-    public InterfaceDto updateBoard(Long id, BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest) {
-
+    public ResponseEntity<?> updateBoard(Long id, BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest) {
         String token = jwtUtil.resolveToken(httpServletRequest);
 
-        Board board = null;
         try {
-            board = boardRepository.findById(id).orElseThrow(
-                    ()-> new ErrorException(ExceptionEnum.BOARD_NOT_FOUND)
+            Board board = boardRepository.findById(id).orElseThrow(
+                    () -> new ErrorException(ExceptionEnum.BOARD_NOT_FOUND)
             );
-        } catch (ErrorException e) {
-            return new ErrorResponseDto(e.getExceptionEnum());
-        }
-
-        Users users = null;
-        try {
-            users = getUserByToken(token);
-        } catch (ErrorException e) {
-            return new ErrorResponseDto(e.getExceptionEnum());
-        }
-
-        try {
-            if(board.getUsers().getUsername().equals(users.getUsername()) || users.getRole() == UserRoleEnum.ADMIN){
+            Users users = getUserByToken(token);
+            assert users != null;
+            if (board.getUsers().getUsername().equals(users.getUsername()) || users.getRole() == UserRoleEnum.ADMIN) {
                 board.update(boardRequestDto);
-                return new BoardResponseDto(board);
+                return ResponseEntity.ok(new BoardResponseDto(board));
             } else {
-                return new ErrorResponseDto(ExceptionEnum.NOT_ALLOWED_AUTHORIZATIONS);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponseDto(ExceptionEnum.NOT_ALLOWED_AUTHORIZATIONS));
             }
-        } catch (Exception e) {
-            return new ErrorResponseDto(ExceptionEnum.UNKNOWN_ERROR);
+        } catch (ErrorException e) {
+            return ResponseEntity.status(e.getExceptionEnum().getStatus()).body(new ErrorResponseDto(e.getExceptionEnum()));
         }
     }
 
-    public InterfaceDto deleteBoard(Long id, HttpServletRequest httpServletRequest) {
 
+    public ResponseEntity<?> deleteBoard(Long id, HttpServletRequest httpServletRequest) {
         try {
             String token = jwtUtil.resolveToken(httpServletRequest);
-
             Claims claims = checkToken(httpServletRequest);
-
             Users users = userRepository.findByUsername(claims.getSubject()).orElseThrow(
-                    ()-> new ErrorException(ExceptionEnum.USER_NOT_FOUND)
+                    () -> new ErrorException(ExceptionEnum.USER_NOT_FOUND)
             );
-
             Board board = boardRepository.findById(id).orElseThrow(
-                    ()-> new ErrorException(ExceptionEnum.BOARD_NOT_FOUND)
+                    () -> new ErrorException(ExceptionEnum.BOARD_NOT_FOUND)
             );
-
-            if(users.getUsername().equals(board.getUsers().getUsername()) || users.getRole() == UserRoleEnum.ADMIN){
+            if (users.getUsername().equals(board.getUsers().getUsername()) || users.getRole() == UserRoleEnum.ADMIN) {
                 boardRepository.deleteById(board.getId());
+                return new ResponseEntity<>(new StatusResponseDto("게시글을 삭제하였습니다.", HttpStatus.OK.value()), HttpStatus.OK);
             } else {
-                return new ErrorResponseDto(ExceptionEnum.NOT_ALLOWED_AUTHORIZATIONS);
+                return new ResponseEntity<>(new ErrorResponseDto(ExceptionEnum.NOT_ALLOWED_AUTHORIZATIONS), HttpStatus.FORBIDDEN);
             }
-            return new StatusResponseDto("게시글을 삭제하였습니다.", HttpStatus.OK.value());
         } catch (ErrorException e) {
-            return new ErrorResponseDto(e.getExceptionEnum());
-        } catch (Exception e) {
-            return new ErrorResponseDto(ExceptionEnum.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(new ErrorResponseDto(e.getExceptionEnum()), HttpStatus.NOT_FOUND);
         }
     }
+
 
     private Users getUserByToken(String token) {
         try {

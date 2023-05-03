@@ -2,14 +2,13 @@ package com.example.board_spring4.board.dto;
 
 import com.example.board_spring4.board.entity.Board;
 import com.example.board_spring4.comment.dto.CommentResponseDto;
-import com.example.board_spring4.global.dto.InterfaceDto;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter // generates getters for the fields in the class automatically
-public class BoardResponseDto implements InterfaceDto { // implements InterfaceDto which means that this class much implement all the methods defined in the InterfaceDto
+public class BoardResponseDto { // implements InterfaceDto which means that this class much implement all the methods defined in the InterfaceDto
 // Client에게 반환될 때 전달되는 Data
     private final Long id;
     private final String title;

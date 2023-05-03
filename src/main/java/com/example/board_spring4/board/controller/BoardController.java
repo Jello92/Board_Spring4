@@ -3,9 +3,9 @@ package com.example.board_spring4.board.controller;
 import com.example.board_spring4.board.dto.BoardRequestDto;
 import com.example.board_spring4.board.dto.BoardResponseDto;
 import com.example.board_spring4.board.service.BoardService;
-import com.example.board_spring4.global.dto.InterfaceDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,7 +18,7 @@ public class BoardController {
     private final BoardService boardService; //@RequiredArgsConstructor generates a constructor that initializes this field
 
     @PostMapping // handles HTTP POST requests
-    public InterfaceDto createBoard (@RequestBody BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest){
+    public ResponseEntity<?> createBoard (@RequestBody BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest){
         return boardService.createBoard(boardRequestDto, httpServletRequest);
     }
 
@@ -28,17 +28,17 @@ public class BoardController {
     }
 
     @GetMapping("/{id}")
-    public InterfaceDto getBoard(@PathVariable Long id){
+    public ResponseEntity<?> getBoard(@PathVariable Long id){
         return boardService.getBoard(id);
     }
 
     @PutMapping("/{id}")
-    public InterfaceDto updateBoard(@PathVariable Long id, @RequestBody BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest){
+    public ResponseEntity<?> updateBoard(@PathVariable Long id, @RequestBody BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest){
         return boardService.updateBoard(id, boardRequestDto, httpServletRequest);
     }
 
     @DeleteMapping("/{id}")
-    public InterfaceDto deleteBoard (@PathVariable Long id, HttpServletRequest httpServletRequest){
+    public ResponseEntity<?> deleteBoard (@PathVariable Long id, HttpServletRequest httpServletRequest){
         return boardService.deleteBoard(id, httpServletRequest);
     }
 }
