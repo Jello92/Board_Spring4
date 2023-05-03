@@ -24,11 +24,10 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+
     private static final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
-
-
 
     @Transactional
     public ResponseEntity<?> signUp(UserRequestDto userRequestDto) {
@@ -53,25 +52,21 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public ResponseEntity<?> login(UserRequestDto userRequestDto, HttpServletResponse httpServletResponse) {
-        try {
-            String username = userRequestDto.getUsername();
-            String password = userRequestDto.getPassword();
+        String username = userRequestDto.getUsername();
+        String password = userRequestDto.getPassword();
 
-            Users users = userRepository.findByUsername(username).orElseThrow(
-                    () -> new ErrorException(ExceptionEnum.USER_NOT_FOUND)
-            );
+        Users users = userRepository.findByUsername(username).orElseThrow(
+                () -> new ErrorException(ExceptionEnum.USER_NOT_FOUND)
+        );
 
-            if (!passwordEncoder.matches(password, users.getPassword())) {
-                throw new ErrorException(ExceptionEnum.INVALID_PASSWORD);
-            }
-
-            String token = jwtUtil.createToken(users.getUsername(), users.getRole());
-            httpServletResponse.addHeader(JwtUtil.AUTHORIZATION_HEADER, token);
-
-            return ResponseEntity.ok(new StatusResponseDto("로그인 성공", HttpStatus.OK.value()));
-        } catch (ErrorException e) {
-            return ResponseEntity.status(e.getExceptionEnum().getStatus())
-                    .body(new ErrorResponseDto(e.getExceptionEnum().getMessage(), e.getExceptionEnum().getStatus()));
+        if (!passwordEncoder.matches(password, users.getPassword())) {
+            throw new ErrorException(ExceptionEnum.INVALID_PASSWORD);
         }
+
+        String token = jwtUtil.createToken(users.getUsername(), users.getRole());
+        httpServletResponse.addHeader(JwtUtil.AUTHORIZATION_HEADER, token);
+
+        return ResponseEntity.ok(new StatusResponseDto("로그인 성공", HttpStatus.OK.value()));
     }
+
 }

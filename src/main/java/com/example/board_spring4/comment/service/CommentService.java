@@ -29,9 +29,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class CommentService {
 
     private final CommentRepository commentRepository;
-    private final UserRepository userRepository;
     private final BoardRepository boardRepository;
-    private final JwtUtil jwtUtil;
 
     @Transactional
     @PostMapping("/comments")
@@ -52,13 +50,11 @@ public class CommentService {
         CommentResponseDto commentResponseDto = new CommentResponseDto(comment);
         return ResponseEntity.ok(commentResponseDto);
     }
-
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseStatus
     @ExceptionHandler({ErrorException.class})
     public ResponseEntity<ErrorResponseDto> handleException(ErrorException e) {
         return ResponseEntity.status(e.getStatus()).body(new ErrorResponseDto(e.getMessage(), e.getStatus()));
     }
-
 
     @Transactional
     public ResponseEntity<?> updateComment(Long id, CommentRequestDto commentRequestDto, Users users) {
@@ -105,8 +101,6 @@ public class CommentService {
 
             statusResponseDto = new StatusResponseDto("해당 댓글을 삭제하였습니다.", HttpStatus.OK.value());
         }
-
         return ResponseEntity.ok(statusResponseDto);
     }
-
 }

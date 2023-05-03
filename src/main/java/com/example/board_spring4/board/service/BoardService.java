@@ -8,12 +8,9 @@ import com.example.board_spring4.comment.dto.CommentResponseDto;
 import com.example.board_spring4.comment.entity.Comment;
 import com.example.board_spring4.global.dto.StatusResponseDto;
 import com.example.board_spring4.global.exception.ErrorException;
-import com.example.board_spring4.global.exception.ErrorResponseDto;
 import com.example.board_spring4.global.exception.ExceptionEnum;
-import com.example.board_spring4.global.jwt.JwtUtil;
 import com.example.board_spring4.user.entity.UserRoleEnum;
 import com.example.board_spring4.user.entity.Users;
-import com.example.board_spring4.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +33,7 @@ public class BoardService {
         boardRepository.save(board);
         BoardResponseDto boardResponseDto = new BoardResponseDto(board);
         return ResponseEntity.ok(boardResponseDto);
+
     }
 
     public ResponseEntity<?> getBoard(Long id) {
@@ -83,7 +81,6 @@ public class BoardService {
         }
     }
 
-
     @Transactional
     public ResponseEntity<?> deleteBoard(Long id, Users users) {
         Board board = boardRepository.findById(id).orElseThrow(
@@ -96,5 +93,4 @@ public class BoardService {
             throw new ErrorException(ExceptionEnum.NOT_ALLOWED_AUTHORIZATIONS);
         }
     }
-
 }

@@ -24,6 +24,5 @@ public enum ExceptionEnum {
     ExceptionEnum(String message, int status){
         this.message = message;
         this.status = status;
-
     }
 }

@@ -40,10 +40,6 @@ public class Comment extends Timestamped {
         board.getComment().add(this);
     }
 
-       public void updateComment(CommentRequestDto commentRequestDto) {
-        this.comment = commentRequestDto.getComment();
-    }
-
     public void setUsers(Users users){
         this.users = users;
     }
