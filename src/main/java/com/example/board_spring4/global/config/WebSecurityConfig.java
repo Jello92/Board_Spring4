@@ -2,7 +2,6 @@ package com.example.board_spring4.global.config;
 
 
 import com.example.board_spring4.global.jwt.JwtAuthFilter;
-import com.example.board_spring4.global.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
@@ -29,7 +28,6 @@ public class WebSecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {

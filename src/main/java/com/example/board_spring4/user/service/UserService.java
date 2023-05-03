@@ -29,6 +29,7 @@ public class UserService {
     private static final String ADMIN_TOKEN = "AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC";
 
 
+
     @Transactional
     public ResponseEntity<?> signUp(UserRequestDto userRequestDto) {
         String username = userRequestDto.getUsername();
@@ -45,11 +46,10 @@ public class UserService {
             }
             userRoleEnum = UserRoleEnum.ADMIN;
         }
-        Users users = new Users(userRequestDto, userRoleEnum);
+        Users users = new Users(username, password, userRoleEnum);
         userRepository.save(users);
         return ResponseEntity.ok(new StatusResponseDto("회원가입 성공", HttpStatus.OK.value()));
     }
-
 
     @Transactional(readOnly = true)
     public ResponseEntity<?> login(UserRequestDto userRequestDto, HttpServletResponse httpServletResponse) {

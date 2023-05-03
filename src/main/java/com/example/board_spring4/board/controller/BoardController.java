@@ -3,9 +3,10 @@ package com.example.board_spring4.board.controller;
 import com.example.board_spring4.board.dto.BoardRequestDto;
 import com.example.board_spring4.board.dto.BoardResponseDto;
 import com.example.board_spring4.board.service.BoardService;
-import jakarta.servlet.http.HttpServletRequest;
+import com.example.board_spring4.global.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,8 +19,8 @@ public class BoardController {
     private final BoardService boardService; //@RequiredArgsConstructor generates a constructor that initializes this field
 
     @PostMapping // handles HTTP POST requests
-    public ResponseEntity<?> createBoard (@RequestBody BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest){
-        return boardService.createBoard(boardRequestDto, httpServletRequest);
+    public ResponseEntity<?> createBoard (@RequestBody BoardRequestDto boardRequestDto, @AuthenticationPrincipal UserDetailsImpl userDetails){
+        return boardService.createBoard(boardRequestDto, userDetails.getUser());
     }
 
     @GetMapping
@@ -33,13 +34,13 @@ public class BoardController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateBoard(@PathVariable Long id, @RequestBody BoardRequestDto boardRequestDto, HttpServletRequest httpServletRequest){
-        return boardService.updateBoard(id, boardRequestDto, httpServletRequest);
+    public ResponseEntity<?> updateBoard(@PathVariable Long id, @RequestBody BoardRequestDto boardRequestDto, @AuthenticationPrincipal UserDetailsImpl userDetails){
+        return boardService.updateBoard(id, boardRequestDto, userDetails.getUser());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteBoard (@PathVariable Long id, HttpServletRequest httpServletRequest){
-        return boardService.deleteBoard(id, httpServletRequest);
+    public ResponseEntity<?> deleteBoard (@PathVariable Long id, @AuthenticationPrincipal UserDetailsImpl userDetails){
+        return boardService.deleteBoard(id, userDetails.getUser());
     }
 }
 
